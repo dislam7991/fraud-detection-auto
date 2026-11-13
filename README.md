@@ -87,7 +87,7 @@ flowchart LR
 ## 📁 Project Structure
 
 ```
-mlops-auto-insurance-demo-2/
+fraud-detection-auto/
 ├── autoinsurance/
 │   ├── etl/
 │   │   ├── extract.py          # CSV → Parquet (raw → interim)
@@ -139,8 +139,8 @@ mlops-auto-insurance-demo-2/
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/dislam7991/mlops-auto-insurance-demo-2.git
-cd mlops-auto-insurance-demo-2
+git clone https://github.com/dislam7991/fraud-detection-auto.git
+cd fraud-detection-auto
 
 # 2. Create and activate a virtual environment
 python -m venv .venv
