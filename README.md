@@ -222,8 +222,7 @@ curl -X POST http://localhost:8000/predict \
   "insured_hobbies_video-games":0,
   "collision_type_Rear Collision":0,
   "collision_type_Side Collision":0,
-  "insured_hobbies_yachting":0,
-  "fraud_reported":0
+  "insured_hobbies_yachting":0
 }}'
 ```
 
