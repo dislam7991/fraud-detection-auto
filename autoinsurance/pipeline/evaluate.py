@@ -66,7 +66,7 @@ def evaluate_and_report(p):
     plt.savefig("reports/confusion_matrix.png"); plt.close()
 
     # log to MLflow
-    mlflow.set_tracking_uri("https://dagshub.com/dislam7991/mlops-auto-insurance-demo.mlflow")
+    mlflow.set_tracking_uri(os.getenv("MLFLOW_TRACKING_URI", "file:./mlruns"))
     mlflow.set_experiment("Insurance-ETL-Train")
     with mlflow.start_run(run_name="evaluate"):
         mlflow.log_metrics({

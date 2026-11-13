@@ -11,19 +11,19 @@ stages:
       hash: md5
       md5: 96a616ab391147433eef44c9d94ce742
       size: 264
-    - path: data/raw/insurance_claims_complete.csv
+    - path: data/raw/insurance_claimsV4.csv
       hash: md5
-      md5: 2313f117442763649acfce4083de83d6
-      size: 264584
+      md5: 4a7b9639c899a4e42c6d70da44b54ff4
+      size: 73659
     - path: params.yaml
       hash: md5
-      md5: 34093b8eef60b51b47e7da7e7975db2f
-      size: 342
+      md5: 4ce355fbe948c985f48faa84b144d2e7
+      size: 335
     outs:
     - path: data/interim/insurance_interim.parquet
       hash: md5
-      md5: 3d52fe92465fb4bb0dea0f7726fbaef5
-      size: 96906
+      md5: 2b980494c6fdef2d6b0c3e62680a571e
+      size: 32609
   transform:
     cmd: python -m cli.transform --params params.yaml
     deps:
@@ -37,17 +37,17 @@ stages:
       size: 268
     - path: data/interim/insurance_interim.parquet
       hash: md5
-      md5: 3d52fe92465fb4bb0dea0f7726fbaef5
-      size: 96906
+      md5: 2b980494c6fdef2d6b0c3e62680a571e
+      size: 32609
     - path: params.yaml
       hash: md5
-      md5: 34093b8eef60b51b47e7da7e7975db2f
-      size: 342
+      md5: 4ce355fbe948c985f48faa84b144d2e7
+      size: 335
     outs:
     - path: data/processed/dataset.parquet
       hash: md5
-      md5: fe2cdd2f21c90674f880722ebe4bada6
-      size: 96933
+      md5: 2b980494c6fdef2d6b0c3e62680a571e
+      size: 32609
   split:
     cmd: python -m cli.split --params params.yaml
     deps:
@@ -57,77 +57,77 @@ stages:
       size: 265
     - path: data/processed/dataset.parquet
       hash: md5
-      md5: fe2cdd2f21c90674f880722ebe4bada6
-      size: 96933
+      md5: 2b980494c6fdef2d6b0c3e62680a571e
+      size: 32609
     - path: params.yaml
       hash: md5
-      md5: 34093b8eef60b51b47e7da7e7975db2f
-      size: 342
+      md5: 4ce355fbe948c985f48faa84b144d2e7
+      size: 335
     outs:
     - path: data/splits/test.parquet
       hash: md5
-      md5: 43503e8274f11b20407c6b136507955c
-      size: 41759
+      md5: 64742dd3c056258bdfbc18deb04425fb
+      size: 25821
     - path: data/splits/train.parquet
       hash: md5
-      md5: 10a59fdd9006e889ab8ebed77bd45f45
-      size: 77348
+      md5: 4dd15c7e708bc5eb64ff9b6c5ff328b6
+      size: 30283
   train:
     cmd: python -m cli.train --params params.yaml
     deps:
     - path: autoinsurance/pipeline/train.py
       hash: md5
-      md5: c41abff5a5f81c0a35cd92cbabab30d0
-      size: 5498
+      md5: 07ae2182709f2019ab09527bc70ed4f3
+      size: 5466
     - path: cli/train.py
       hash: md5
       md5: afd137099ce46b30727910a1a1050c34
       size: 263
     - path: data/splits/train.parquet
       hash: md5
-      md5: 10a59fdd9006e889ab8ebed77bd45f45
-      size: 77348
+      md5: 4dd15c7e708bc5eb64ff9b6c5ff328b6
+      size: 30283
     - path: params.yaml
       hash: md5
-      md5: 34093b8eef60b51b47e7da7e7975db2f
-      size: 342
+      md5: 4ce355fbe948c985f48faa84b144d2e7
+      size: 335
     outs:
     - path: models/model.pkl
       hash: md5
-      md5: 8e639f6e11482095e936beffdfe4487b
-      size: 44773
+      md5: 9ae41d9f3d1fcefa2816f334368d1335
+      size: 6293
   evaluate:
     cmd: python -m cli.evaluate --params params.yaml
     deps:
     - path: autoinsurance/pipeline/evaluate.py
       hash: md5
-      md5: c92ab8c86a4bca0398cfb0a7a981026f
-      size: 3038
+      md5: cabe5abb5b4fae69be45e3b53d088f7c
+      size: 3022
     - path: cli/evaluate.py
       hash: md5
       md5: 9ee2998a489cb2459d4fa0f879a79dcd
       size: 284
     - path: data/splits/test.parquet
       hash: md5
-      md5: 43503e8274f11b20407c6b136507955c
-      size: 41759
+      md5: 64742dd3c056258bdfbc18deb04425fb
+      size: 25821
     - path: models/model.pkl
       hash: md5
-      md5: 8e639f6e11482095e936beffdfe4487b
-      size: 44773
+      md5: 9ae41d9f3d1fcefa2816f334368d1335
+      size: 6293
     - path: params.yaml
       hash: md5
-      md5: 34093b8eef60b51b47e7da7e7975db2f
-      size: 342
+      md5: 4ce355fbe948c985f48faa84b144d2e7
+      size: 335
     outs:
     - path: reports/confusion_matrix.png
       hash: md5
-      md5: b4c4f443b92ffa0401732646c7495656
-      size: 17431
+      md5: c4836c8673c3800543f310bdcc88f3e8
+      size: 17783
     - path: reports/metrics.json
       hash: md5
-      md5: 82f6da7272fd1d80a931051044d19cfd
-      size: 189
+      md5: 60a88793a7b01824af5d8da11eda75f8
+      size: 203
   drift_report:
     cmd: python -m cli.drift_report --params params.yaml
     deps:
@@ -137,18 +137,18 @@ stages:
       size: 264
     - path: data/splits/test.parquet
       hash: md5
-      md5: 43503e8274f11b20407c6b136507955c
-      size: 41759
+      md5: 64742dd3c056258bdfbc18deb04425fb
+      size: 25821
     - path: data/splits/train.parquet
       hash: md5
-      md5: 10a59fdd9006e889ab8ebed77bd45f45
-      size: 77348
+      md5: 4dd15c7e708bc5eb64ff9b6c5ff328b6
+      size: 30283
     - path: params.yaml
       hash: md5
-      md5: 34093b8eef60b51b47e7da7e7975db2f
-      size: 342
+      md5: 4ce355fbe948c985f48faa84b144d2e7
+      size: 335
     outs:
     - path: reports/evidently_data_report.html
       hash: md5
-      md5: 0a5eae35bfe0ab34409338ba9eefb45d
-      size: 4910555
+      md5: 06080fc3721d155deea9ed4e596662c4
+      size: 4325854

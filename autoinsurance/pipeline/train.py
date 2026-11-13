@@ -52,8 +52,8 @@ def make_splits(p):
     pd.concat([X_test,  y_test],  axis=1).to_parquet(p["paths"]["test"],  index=False)
 
 def train_and_log(p):
-    # point MLflow to DagsHub (env vars also OK)
-    mlflow.set_tracking_uri("https://dagshub.com/dislam7991/mlops-auto-insurance-demo.mlflow")
+    # point MLflow to local file
+    mlflow.set_tracking_uri(os.getenv("MLFLOW_TRACKING_URI", "file:./mlruns"))
     mlflow.set_experiment("Insurance-ETL-Train")
     mlflow.sklearn.autolog(log_models=False)  # we log explicitly with signature+example
 
