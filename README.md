@@ -129,6 +129,10 @@ fraud-detection-auto/
 
 ## 🚀 Getting Started
 
+### Data
+
+The data file is `data/raw/insurance_claimsV4.csv`, and it is in this repository. It has 1,000 claims, 33 feature columns, and 1 label column (`fraud_reported`). The categories are already encoded as 0 and 1 columns. The file is a prepared training dataset (cleaned). 
+
 ### Prerequisites
 
 - Python 3.11+
