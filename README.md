@@ -172,7 +172,6 @@ python -m cli.train      --params params.yaml   # Train model & log to MLflow
 python -m cli.evaluate   --params params.yaml   # Evaluate on test set
 python -m cli.drift_report --params params.yaml # Generate Evidently drift report
 ```
-
 ### Run the Prediction API
 
 ```bash
@@ -184,12 +183,14 @@ docker build -t autoins-svc .
 docker run -p 8000:8000 autoins-svc
 ```
 
-**Example request:**
+**Send a test request from the browser (all systems):**
 
-```bash
-curl -X POST http://localhost:8000/predict \
-  -H "Content-Type: application/json" \
-  -d '{"features": {
+Open http://localhost:8000/docs, click `/predict`, click "Try it out", paste the request body below, and click "Execute".
+
+**Request body:**
+
+```json
+{"features": {
   "incident_severity_Total Loss":0,
   "insured_hobbies_cross-fit":0,
   "insured_hobbies_chess":0,
@@ -223,14 +224,32 @@ curl -X POST http://localhost:8000/predict \
   "collision_type_Rear Collision":0,
   "collision_type_Side Collision":0,
   "insured_hobbies_yachting":0
-}}'
+}}
 ```
 
+**Send the request from a terminal (Linux and macOS):**
+
+Save the request body as `example_request.json`, and run this command.
+
+```bash
+curl -X POST http://localhost:8000/predict \
+  -H "Content-Type: application/json" \
+  -d @example_request.json
+```
+
+**Send the request from a terminal (Windows PowerShell):**
+
+```powershell
+Invoke-RestMethod -Uri http://localhost:8000/predict -Method Post -ContentType "application/json" -InFile example_request.json
+```
 
 **Example response:**
 
 ```json
-{"prediction": 1, "proba": 0.83}
+{
+  "prediction": 0,
+  "proba": 0.0650509449573563
+}
 ```
 
 ---
