@@ -189,8 +189,44 @@ docker run -p 8000:8000 autoins-svc
 ```bash
 curl -X POST http://localhost:8000/predict \
   -H "Content-Type: application/json" \
-  -d '{"features": {"age": 35, "policy_annual_premium": 1200.0, "incident_type": "multi-vehicle_collision"}}'
+  -d '{"features": {
+  "incident_severity_Total Loss":0,
+  "insured_hobbies_cross-fit":0,
+  "insured_hobbies_chess":0,
+  "incident_severity_Minor Damage":1,
+  "auto_model_X6":0,
+  "auto_make_Volkswagen":0,
+  "insured_occupation_craft-repair":0,
+  "insured_relationship_wife":0,
+  "insured_hobbies_hiking":0,
+  "auto_model_95":0,
+  "auto_model_Neon":0,
+  "insured_relationship_own-child":0,
+  "auto_make_Honda":1,
+  "vehicle_claim":4500,
+  "insured_education_level_College":0,
+  "insured_hobbies_reading":0,
+  "insured_relationship_not-in-family":1,
+  "insured_occupation_tech-support":0,
+  "insured_occupation_armed-forces":0,
+  "auto_model_A5":0,
+  "insured_hobbies_camping":0,
+  "auto_model_Malibu":0,
+  "insured_education_level_Masters":0,
+  "incident_state_WV":1,
+  "auto_model_Civic":1,
+  "insured_hobbies_skydiving":0,
+  "insured_occupation_handlers-cleaners":0,
+  "incident_state_VA":0,
+  "insured_relationship_other-relative":0,
+  "insured_hobbies_video-games":0,
+  "collision_type_Rear Collision":0,
+  "collision_type_Side Collision":0,
+  "insured_hobbies_yachting":0,
+  "fraud_reported":0
+}}'
 ```
+
 
 **Example response:**
 
@@ -240,8 +276,7 @@ curl -X POST http://localhost:8000/predict \
 - **Threshold matters more than the algorithm** — moving the decision boundary from 0.5 to ~0.35 improved F1 by ~15 % without changing the model architecture
 - **Feature types drive preprocessing choices** — a mix of continuous (claim amounts, policy premiums, age) and high-cardinality categorical features (incident type, vehicle make) required careful `ColumnTransformer` design to avoid data leakage
 - **Drift detection is non-trivial** — the Evidently report revealed distributional shifts in several claim-amount features between training and test data, highlighting the need for periodic retraining in production
-- **Serving latency is negligible** — Serving cost is low. The serialized scikit-learn pipeline is 44 KB, and each prediction is one logistic regression call.
-
+- **Serving speed is measured.** The serialized scikit-learn pipeline is 44 KB. The FastAPI service handled 141 to 154 requests per second with 0 errors across 4 local load tests. Each test sent 2,000 requests from 16 parallel clients to 1 uvicorn worker on a laptop. Median latency under that load was 87 to 92 ms, and each prediction takes about 7 ms of server time. Repeat the test with `python scripts\loadtest.py`.
 ---
 
 ## 📜 License
