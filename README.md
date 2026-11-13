@@ -240,7 +240,7 @@ curl -X POST http://localhost:8000/predict \
 - **Threshold matters more than the algorithm** — moving the decision boundary from 0.5 to ~0.35 improved F1 by ~15 % without changing the model architecture
 - **Feature types drive preprocessing choices** — a mix of continuous (claim amounts, policy premiums, age) and high-cardinality categorical features (incident type, vehicle make) required careful `ColumnTransformer` design to avoid data leakage
 - **Drift detection is non-trivial** — the Evidently report revealed distributional shifts in several claim-amount features between training and test data, highlighting the need for periodic retraining in production
-- **Serving latency is negligible** — the serialised `sklearn.Pipeline` (44 KB) loads in milliseconds; the FastAPI service handles hundreds of predictions per second on a single CPU core
+- **Serving latency is negligible** — Serving cost is low. The serialized scikit-learn pipeline is 44 KB, and each prediction is one logistic regression call.
 
 ---
 
