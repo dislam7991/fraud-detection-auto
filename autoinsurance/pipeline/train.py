@@ -94,7 +94,7 @@ def train_and_log(p):
         mlflow.log_param("n_num_features", len(num))
         mlflow.log_param("n_cat_features", len(cat))
         mlflow.log_param("class_weight", "balanced")
-        mlflow.log_param("max_iter", 2000)
+        mlflow.log_param("max_iter", 3000)
 
         mlflow.log_metric("train_accuracy", accuracy_score(y_tr, yhat_tr))
         mlflow.log_metric("train_precision", precision_score(y_tr, yhat_tr, zero_division=0))

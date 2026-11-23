@@ -8,18 +8,17 @@
   <img src="https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white" />
   <img src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white" />
   <img src="https://img.shields.io/badge/Evidently_AI-FF6B6B?style=for-the-badge&logoColor=white" />
-  <img src="https://img.shields.io/badge/DagsHub-orange?style=for-the-badge&logoColor=white" />
 </p>
 
 <p align="center">
-  <strong>Production-grade ML pipeline that ingests raw insurance claims, engineers features, trains a fraud classifier, tracks experiments on DagsHub, monitors data drift with Evidently AI, and serves predictions via a Dockerised FastAPI service — all orchestrated end-to-end with DVC.</strong>
+  <strong>A reproducible ML pipeline that reads a prepared table of insurance claims, trains a fraud classifier, tracks each training run with MLflow, compares the train and test data with Evidently AI, and serves predictions from a FastAPI service in Docker. DVC runs the pipeline stages.</strong>
 </p>
 
 ---
 
 ## 📋 Overview
 
-Auto insurance fraud costs the industry billions of dollars annually and drives up premiums for honest policyholders. This project delivers a **reproducible, end-to-end MLOps pipeline** that automatically classifies insurance claims as fraudulent or legitimate using structured claim and policyholder data. The solution goes beyond a notebook experiment: every pipeline stage is versioned with DVC, every training run is tracked in MLflow on DagsHub, and the trained model is deployed as a REST API inside a Docker container — mirroring how fraud models are shipped in production environments.
+Auto insurance fraud costs the industry billions of dollars annually and drives up premiums for honest policyholders. This project is a **reproducible, end-to-end MLOps pipeline** that classifies insurance claims as fraudulent or legitimate. The input is a prepared table of 1,000 claims with 33 feature columns. DVC defines and caches each pipeline stage. MLflow records each training run in the local `mlruns/` folder. A FastAPI service in a Docker container serves the trained model as a REST API.
 
 ---
 
@@ -29,7 +28,7 @@ Auto insurance fraud costs the industry billions of dollars annually and drives 
 flowchart LR
     A[📂 Raw CSV\ninsurance_claims] --> B[Extract\ncli/extract.py]
     B --> C[Interim Parquet]
-    C --> D[Transform\ncli/transform.py\nclean • impute • encode target]
+    C --> D[Transform\ncli/transform.py\nclean • impute]
     D --> E[Processed Parquet]
     E --> F[Split\ncli/split.py\ntrain / val / test]
     F --> G[Train\ncli/train.py\nLogisticRegression\nthreshold sweep]
@@ -52,18 +51,18 @@ flowchart LR
 
 ## ✨ Features
 
-- **Automated ETL** — reads raw CSV, converts to Parquet, normalises string columns, imputes missing numerics (median) and categoricals (mode), and maps the `fraud_reported` target (`Y`/`N` → `1`/`0`)
-- **Stratified Train / Val / Test Splits** — reproducible splits (70 / 12.5 / 17.5 %) with configurable `random_state` and sizes in `params.yaml`
-- **Sklearn Pipeline with ColumnTransformer** — `StandardScaler` for numeric features, `OneHotEncoder` (unknown-safe) for categoricals — all inside a single serialisable `Pipeline` object
-- **Class-Imbalance Handling** — `LogisticRegression` trained with `class_weight="balanced"` to compensate for the naturally skewed fraud ratio
+- **Automated ETL** — reads the raw CSV and converts it to Parquet. The transform stage has rules for text columns, missing values, and a `Y`/`N` target. The current data file is already numeric and complete, so these rules do not change it.
+- **Stratified Train / Val / Test Splits** — reproducible splits of 700 / 100 / 200 rows (70 / 10 / 20 %) with configurable `random_state` and sizes in `params.yaml`
+- **Sklearn Pipeline with ColumnTransformer** — `StandardScaler` for numeric columns and `OneHotEncoder` (unknown-safe) for text columns, inside a single serialisable `Pipeline` object. All 33 columns in the current data file are numeric, so the encoder has no columns to encode.
+- **Class-Imbalance Handling** — `LogisticRegression` trained with `class_weight="balanced"`, because 24.7 % of the claims (247 of 1,000) are fraud
 - **Threshold Optimisation** — sweeps 19 decision thresholds (0.05 → 0.95) on the validation set and selects the threshold that maximises F1-score; persisted to `models/threshold.json`
-- **MLflow Experiment Tracking** — logs parameters, per-threshold metrics, ROC-AUC, and the full model artefact (with input signature and example) to **DagsHub**
-- **Data Drift Monitoring** — generates an Evidently AI HTML report comparing training vs. test distributions; detects covariate shift before it silently degrades production performance
+- **MLflow Experiment Tracking** — logs parameters, per-threshold metrics, ROC-AUC, and the full model artefact (with input signature and example). Runs go to the local `mlruns/` folder by default. Set the `MLFLOW_TRACKING_URI` environment variable to send runs to a remote server such as DagsHub.
+- **Data Drift Monitoring** — generates an Evidently AI HTML report that compares the training and test distributions. Both sets come from one random split, so the report is a baseline. The same stage can compare training data with new production data.
 - **DVC Pipeline Orchestration** — every stage declared in `dvc.yaml` with explicit dependencies and outputs; `dvc repro` runs only what changed
 - **FastAPI Prediction Service** — `/predict` (POST), `/health` (GET), and `/` (GET) endpoints; model loaded once at startup from a configurable `MODEL_PATH` env variable
-- **Docker Containerization** — multi-stage `Dockerfile` using `python:3.11-slim`; separate `requirements-serving.txt` keeps the image lean (~no training dependencies)
-- **Schema Validation** — `pandera` included for DataFrame contract enforcement at pipeline boundaries
-- **Config-Driven** — all paths, split ratios, and hyperparameters live in `params.yaml`; zero code changes needed to retrain on a new dataset
+- **Docker Containerization** — single-stage `Dockerfile` using `python:3.11-slim`; a separate `requirements-serving.txt` keeps training dependencies out of the image
+- **Request Validation** — a Pydantic model checks that each `/predict` request has a `features` object. The pipeline does not validate the data schema yet.
+- **Config-Driven** — all paths, split ratios, and the target column name live in `params.yaml`. The model hyperparameters are set in `autoinsurance/pipeline/train.py`.
 
 ---
 
@@ -73,12 +72,12 @@ flowchart LR
 |---|---|
 | Language | Python 3.11 |
 | ML / Preprocessing | scikit-learn, NumPy, pandas |
-| Experiment Tracking | MLflow ≥ 2.9, DagsHub |
+| Experiment Tracking | MLflow ≥ 2.9 (local `mlruns/` by default) |
 | Pipeline Versioning | DVC |
 | Data Drift Monitoring | Evidently AI |
 | Model Serving | FastAPI, Uvicorn |
 | Containerization | Docker (python:3.11-slim) |
-| Schema Validation | pandera |
+| Request Validation | Pydantic |
 | Config Management | PyYAML (`params.yaml`) |
 | Serialisation | joblib |
 
@@ -92,9 +91,9 @@ fraud-detection-auto/
 │   ├── etl/
 │   │   ├── extract.py          # CSV → Parquet (raw → interim)
 │   │   ├── transform.py        # Cleaning, imputation, target encoding
-│   │   └── load.py
+│   │   └── load.py             # Not used by the DVC pipeline
 │   ├── pipeline/
-│   │   ├── train.py            # Feature engineering, model training, MLflow logging
+│   │   ├── train.py            # Train / val / test split, model training, MLflow logging
 │   │   └── evaluate.py         # Test-set evaluation, confusion matrix, drift report
 │   └── serving/
 │       └── app.py              # FastAPI REST service (/predict, /health)
@@ -106,18 +105,20 @@ fraud-detection-auto/
 │   ├── evaluate.py
 │   └── drift_report.py
 ├── data/
-│   ├── raw/                    # Source CSV (DVC-tracked)
+│   ├── raw/                    # Source CSV (tracked in Git)
 │   ├── interim/                # Post-extract Parquet
 │   ├── processed/              # Post-transform Parquet
 │   └── splits/                 # train / val / test Parquet files
 ├── models/
-│   ├── model.pkl               # Serialised sklearn Pipeline
-│   └── threshold.json          # Optimal decision threshold
+│   ├── model.pkl               # Serialised sklearn Pipeline (created by the train stage)
+│   └── threshold.json          # Decision threshold selected on the validation set
 ├── reports/
 │   ├── metrics.json            # Test-set evaluation metrics
 │   ├── confusion_matrix.png    # Confusion matrix plot
 │   └── evidently_data_report.html  # Data drift HTML report
 ├── Dockerfile                  # Serving image (slim)
+├── scripts/
+│   └── loadtest.py             # Load test for the /predict endpoint
 ├── requirements.txt            # Training dependencies
 ├── requirements-serving.txt    # Serving-only dependencies
 ├── params.yaml                 # Pipeline configuration
@@ -152,10 +153,9 @@ source .venv/bin/activate  # Windows: .venv\Scripts\activate
 
 # 3. Install dependencies
 pip install -r requirements.txt
-
-# 4. Pull DVC-tracked data
-dvc pull
 ```
+
+The raw data file is in Git, so `dvc pull` is not necessary.
 
 ### Run the Full Pipeline
 
@@ -170,13 +170,15 @@ DVC caches outputs at each stage — re-running only executes stages whose input
 
 ```bash
 python -m cli.extract    --params params.yaml   # Raw CSV → interim Parquet
-python -m cli.transform  --params params.yaml   # Clean & encode features
+python -m cli.transform  --params params.yaml   # Apply the cleaning rules
 python -m cli.split      --params params.yaml   # Create train / val / test splits
 python -m cli.train      --params params.yaml   # Train model & log to MLflow
 python -m cli.evaluate   --params params.yaml   # Evaluate on test set
 python -m cli.drift_report --params params.yaml # Generate Evidently drift report
 ```
 ### Run the Prediction API
+
+Run the pipeline first. The API and the Docker build need the file `models/model.pkl`, which the train stage creates.
 
 ```bash
 # Option 1: Local (uvicorn)
@@ -260,16 +262,18 @@ Invoke-RestMethod -Uri http://localhost:8000/predict -Method Post -ContentType "
 
 ## 📊 Model Performance
 
-> Metrics are computed on the held-out **test set** (≈17.5 % of data) using the threshold selected during validation.
+> Metrics are computed on the held-out **test set** (200 claims, 49 of them fraud) using the threshold selected on the validation set (100 claims, 25 of them fraud). These numbers come from a full pipeline run on 2026-11-23 with `random_state: 42`.
 
 | Model | AUC-ROC | F1-Score | Precision | Recall | Threshold |
 |---|---|---|---|---|---|
-| Logistic Regression (balanced) | 0.86 | 0.72 | 0.68 | 0.77 | 0.35 |
+| Logistic Regression (balanced) | 0.82 | 0.57 | 0.69 | 0.49 | 0.75 |
 
-> 📌 *Actual run metrics are logged per-run in MLflow on DagsHub and written to `reports/metrics.json` after each `dvc repro`.*
+At the 0.75 threshold, the model flags 35 of the 200 test claims. 24 of the 35 flagged claims are fraud, and the model does not flag 25 of the 49 fraud claims.
+
+> 📌 *Each run logs its metrics to MLflow and writes them to `reports/metrics.json`.*
 
 **Key design choices affecting metrics:**
-- `class_weight="balanced"` trades precision for recall — appropriate when the cost of missing a fraudulent claim exceeds a false positive
+- `class_weight="balanced"` trades precision for recall. At a 0.5 threshold on the test set, recall is 0.71 with balanced weights and 0.49 without them. Precision is 0.61 with balanced weights and 0.69 without them.
 - Decision threshold is tuned on the validation set to maximise F1, not fixed at 0.5
 - ROC-AUC used as the primary ranking metric; F1 used for threshold selection
 
@@ -279,26 +283,26 @@ Invoke-RestMethod -Uri http://localhost:8000/predict -Method Post -ContentType "
 
 | Component | Implementation |
 |---|---|
-| **Experiment Tracking** | MLflow (autolog + manual metric/param logging) synced to DagsHub |
-| **Model Registry** | MLflow model logged with input signature and example for schema enforcement |
+| **Experiment Tracking** | MLflow (autolog + manual metric/param logging) to local `mlruns/`, or to a remote server through `MLFLOW_TRACKING_URI` |
+| **Model Logging** | MLflow logs the model with an input signature and an input example. The project does not use the MLflow Model Registry. |
 | **Pipeline Versioning** | DVC stages in `dvc.yaml` with `dvc.lock` for full reproducibility |
-| **Data Versioning** | DVC remote tracks raw CSV and all intermediate Parquet artefacts |
+| **Data Versioning** | The raw CSV is in Git. `dvc.lock` records a hash for each stage output. |
 | **Threshold Optimisation** | Validation-set sweep across 19 thresholds; best persisted to `models/threshold.json` |
-| **Data Drift Monitoring** | Evidently AI `DataDriftPreset` report comparing train vs. test distributions |
-| **Model Serving** | FastAPI REST API with health check, lazy-load fallback, and Pydantic request validation |
+| **Data Drift Monitoring** | Evidently AI `DataDriftPreset` report comparing train vs. test distributions (a baseline) |
+| **Model Serving** | FastAPI REST API with a health check and a Pydantic request model. The API loads the model at startup and tries again on the first request if the load failed. |
 | **Containerization** | Docker image from `python:3.11-slim` with serving-only deps for a minimal footprint |
 | **Config Management** | Single `params.yaml` controls all paths, split ratios, and target column name |
-| **Schema Validation** | pandera available for DataFrame contract enforcement at pipeline boundaries |
+| **Schema Validation** | Not implemented yet. The API checks only that a request has a `features` object. |
 
 ---
 
 ## 💡 Results / Key Findings
 
-- **Fraud is rare but expensive** — the dataset exhibits natural class imbalance; training without `class_weight="balanced"` yielded near-zero recall on the minority (fraud) class
-- **Threshold matters more than the algorithm** — moving the decision boundary from 0.5 to ~0.35 improved F1 by ~15 % without changing the model architecture
-- **Feature types drive preprocessing choices** — a mix of continuous (claim amounts, policy premiums, age) and high-cardinality categorical features (incident type, vehicle make) required careful `ColumnTransformer` design to avoid data leakage
-- **Drift detection is non-trivial** — the Evidently report revealed distributional shifts in several claim-amount features between training and test data, highlighting the need for periodic retraining in production
-- **Serving speed is measured.** The serialized scikit-learn pipeline is 44 KB. The FastAPI service handled 141 to 154 requests per second with 0 errors across 4 local load tests. Each test sent 2,000 requests from 16 parallel clients to 1 uvicorn worker on a laptop. Median latency under that load was 87 to 92 ms, and each prediction takes about 7 ms of server time. Repeat the test with `python scripts\loadtest.py`.
+- **Fraud is the minority class** — 24.7 % of the claims are fraud. Balanced class weights raised test recall at a 0.5 threshold from 0.49 to 0.71, and precision fell from 0.69 to 0.61.
+- **The tuned threshold did not generalise** — the sweep selected 0.75 on the 100 validation claims, where F1 rose from 0.64 (at 0.5) to 0.70. On the 200 test claims, F1 at 0.75 is 0.57, and F1 at 0.5 is 0.66. A validation set with 25 fraud claims is too small to select a threshold reliably.
+- **The data file is already prepared** — 32 of the 33 feature columns are 0/1 indicator columns, and `vehicle_claim` is the only continuous column. Someone selected and encoded these columns before this pipeline. If that selection used the fraud label on all 1,000 rows, the test metrics are too optimistic.
+- **The drift report found no drift** — Evidently detected drift in 0 of 34 columns between the training and test sets. This is the expected result for a random stratified split, and it gives a baseline for later comparisons with new data.
+- **Serving speed is measured.** The serialized scikit-learn pipeline is about 6 KB. The FastAPI service handled 141 to 154 requests per second with 0 errors across 4 local load tests. Each test sent 2,000 requests from 16 parallel clients to 1 uvicorn worker on a laptop. Median latency under that load was 87 to 92 ms, and each prediction takes about 7 ms of server time. Repeat the test with `python scripts/loadtest.py`.
 ---
 
 ## 📜 License
