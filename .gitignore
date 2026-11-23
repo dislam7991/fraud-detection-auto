@@ -207,3 +207,9 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# Pipeline outputs (the pipeline creates these again on each run)
+data/interim/
+data/processed/
+data/splits/
+mlruns/
